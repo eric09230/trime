@@ -19,13 +19,19 @@ import androidx.annotation.Keep
 import androidx.annotation.RequiresApi
 import androidx.lifecycle.lifecycleScope
 import com.osfans.trime.R
+import com.osfans.trime.core.RimeConfig
 import com.osfans.trime.core.RimeMessage
+import com.osfans.trime.core.SchemaItem
+import com.osfans.trime.daemon.RimeSession
+import com.osfans.trime.daemon.launchOnReady
 import com.osfans.trime.data.db.ClipboardHelper
 import com.osfans.trime.data.prefs.AppPrefs
 import com.osfans.trime.data.theme.ColorManager
 import com.osfans.trime.data.theme.KeyActionManager
 import com.osfans.trime.data.theme.Theme
 import com.osfans.trime.ime.bar.ui.AlwaysUi
+import com.osfans.trime.ime.bar.ui.switches.InlineSwitchEntry
+import com.osfans.trime.ime.bar.ui.switches.SwitchesAdapter
 import com.osfans.trime.ime.bar.ui.CandidateUi
 import com.osfans.trime.ime.bar.ui.TabUi
 import com.osfans.trime.ime.broadcast.InputBroadcastReceiver
@@ -63,6 +69,33 @@ class InputBarDelegate : InputBroadcastReceiver {
     private val windowManager: BoardWindowManager by di.instance()
     private val commonKeyboardActionListener: CommonKeyboardActionListener by di.instance()
     private val candidate: CompactCandidateDelegate by di.instance()
+    private val rime: RimeSession by di.instance()
+    private var hasSwitches = false
+
+    private val saveOptions by lazy {
+        RimeConfig.openConfig("default").use {
+            it.getList("switcher/save_options", RimeConfig::getString).toSet()
+        }
+    }
+
+    private fun loadSwitches() {
+        rime.launchOnReady { api ->
+            val switches = api.currentSchema().switches
+            val entries = switches.mapNotNull { InlineSwitchEntry.fromSwitch(rime, it) }
+            service.lifecycleScope.launch {
+                hasSwitches = entries.isNotEmpty()
+                alwaysUi.switchesUi.setSwitches(entries)
+                evalAlwaysUiState()
+            }
+        }
+    }
+
+    private fun refreshSwitchStates() {
+        val switches = rime.run { schemaCached }.switches
+        val entries = switches.mapNotNull { InlineSwitchEntry.fromSwitch(rime, it) }
+        hasSwitches = entries.isNotEmpty()
+        alwaysUi.switchesUi.setSwitches(entries)
+    }
 
     val themedHeight = theme.generalStyle.run { candidateViewHeight + commentHeight }
 
@@ -111,6 +144,7 @@ class InputBarDelegate : InputBroadcastReceiver {
             when {
                 isClipboardFresh -> AlwaysUi.State.Clipboard
                 isInlineSuggestionPresent -> AlwaysUi.State.InlineSuggestion
+                hasSwitches -> AlwaysUi.State.Switches
                 else -> AlwaysUi.State.Toolbar
             }
         if (newState == alwaysUi.currentState) return
@@ -151,6 +185,50 @@ class InputBarDelegate : InputBroadcastReceiver {
                     true
                 }
             }
+            switchesUi.setOnSwitchClick({ entry ->
+                val sw = entry.switch
+                // Optimistic UI update
+                val newIndex = if (sw.options.isEmpty()) {
+                    1 - entry.enabledIndex
+                } else {
+                    (entry.enabledIndex + 1) % sw.states.size
+                }
+                val optimistic = entry.copy(enabledIndex = newIndex)
+                val currentList = switchesUi.root.adapter?.let {
+                    (it as? SwitchesAdapter)?.items?.toMutableList()
+                } ?: mutableListOf()
+                val pos = currentList.indexOfFirst { it.switch == sw }
+                if (pos >= 0) {
+                    currentList[pos] = optimistic
+                    switchesUi.setSwitches(currentList)
+                }
+                // Async toggle
+                if (sw.options.isEmpty()) {
+                    rime.launchOnReady { api ->
+                        val oldValue = api.getRuntimeOption(sw.name)
+                        api.setRuntimeOption(sw.name, !oldValue)
+                        if (sw.name in saveOptions) {
+                            RimeConfig.openUserConfig("user").use {
+                                it.setBool("var/option/${sw.name}", !oldValue)
+                            }
+                        }
+                    }
+                } else {
+                    rime.launchOnReady { api ->
+                        val currentIdx = sw.options.indexOfFirst { api.getRuntimeOption(it) }
+                        val safeIdx = if (currentIdx >= 0) currentIdx else 0
+                        val newIdx = (safeIdx + 1) % sw.options.size
+                        sw.options.forEachIndexed { i, opt ->
+                            api.setRuntimeOption(opt, i == newIdx)
+                            if (opt in saveOptions) {
+                                RimeConfig.openUserConfig("user").use {
+                                    it.setBool("var/option/$opt", i == newIdx)
+                                }
+                            }
+                        }
+                    }
+                }
+            })
         }
     }
 
@@ -255,6 +333,7 @@ class InputBarDelegate : InputBroadcastReceiver {
 
             evalAlwaysUiState()
             ClipboardHelper.addOnUpdateListener(onClipboardUpdateListener)
+            loadSwitches()
         }
     }
 
@@ -333,5 +412,11 @@ class InputBarDelegate : InputBroadcastReceiver {
 
     override fun onRimeOptionUpdated(value: RimeMessage.OptionMessage.Data) {
         alwaysUi.updateButtonsStyle()
+        refreshSwitchStates()
+        evalAlwaysUiState()
+    }
+
+    override fun onRimeSchemaUpdated(schema: SchemaItem) {
+        loadSwitches()
     }
 }
