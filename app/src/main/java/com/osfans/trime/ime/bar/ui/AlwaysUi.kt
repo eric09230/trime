@@ -12,6 +12,7 @@ import androidx.constraintlayout.widget.ConstraintLayout
 import com.osfans.trime.R
 import com.osfans.trime.data.theme.Theme
 import com.osfans.trime.data.theme.model.ToolBar
+import com.osfans.trime.ime.bar.ui.switches.SwitchesUi
 import splitties.dimensions.dp
 import splitties.views.dsl.constraintlayout.after
 import splitties.views.dsl.constraintlayout.before
@@ -36,6 +37,7 @@ class AlwaysUi(
         Toolbar,
         Clipboard,
         InlineSuggestion,
+        Switches,
     }
 
     var currentState = State.Toolbar
@@ -57,6 +59,8 @@ class AlwaysUi(
     val clipboardUi = ClipboardSuggestionUi(ctx)
 
     val inlineSuggestionsUi = InlineSuggestionsUi(ctx)
+
+    val switchesUi = SwitchesUi(ctx, theme)
 
     val hideKeyboardButton = ToolButton(ctx, R.drawable.ic_baseline_arrow_drop_down_24)
     private val rightMostButton =
@@ -80,6 +84,7 @@ class AlwaysUi(
             add(buttonsUi.root, lParams(matchParent, matchParent))
             add(clipboardUi.root, lParams(matchParent, matchParent))
             add(inlineSuggestionsUi.root, lParams(matchParent, matchParent))
+            add(switchesUi.root, lParams(matchParent, matchParent))  // 3 = Switches
         }
 
     override val root: ConstraintLayout = constraintLayout {
@@ -139,25 +144,35 @@ class AlwaysUi(
     }
 
     private fun updateRightMostButton(state: State) {
-        val hasFirstButton = buttonsUi.firstButton != null
-        val showFirst = hasFirstButton && (theme.toolBar.buttons.isNotEmpty() || state != State.Toolbar)
-        rightMostButton.displayedChild = if (showFirst) 1 else 0
+        if (state == State.Switches) {
+            rightMostButton.visibility = android.view.View.GONE
+        } else {
+            rightMostButton.visibility = android.view.View.VISIBLE
+            val hasFirstButton = buttonsUi.firstButton != null
+            val showFirst = hasFirstButton && (theme.toolBar.buttons.isNotEmpty() || state != State.Toolbar)
+            rightMostButton.displayedChild = if (showFirst) 1 else 0
+        }
     }
 
     private fun updateLeftMostButton(state: State) {
-        leftMostButton.displayedChild = if (state == State.Toolbar) 0 else 1
+        if (state == State.Switches) {
+            leftMostButton.visibility = android.view.View.GONE
+        } else {
+            leftMostButton.visibility = android.view.View.VISIBLE
+            leftMostButton.displayedChild = if (state == State.Toolbar) 0 else 1
 
-        val buttonConfig =
-            if (state == State.Toolbar) {
-                theme.toolBar.primaryButton
-            } else {
-                theme.toolBar.buttons.firstOrNull()
+            val buttonConfig =
+                if (state == State.Toolbar) {
+                    theme.toolBar.primaryButton
+                } else {
+                    theme.toolBar.buttons.firstOrNull()
+                }
+
+            val (buttonWidth, buttonHeight) = buttonsUi.getButtonSize(buttonConfig)
+            leftMostButton.layoutParams = leftMostButton.layoutParams.apply {
+                width = buttonWidth
+                height = buttonHeight
             }
-
-        val (buttonWidth, buttonHeight) = buttonsUi.getButtonSize(buttonConfig)
-        leftMostButton.layoutParams = leftMostButton.layoutParams.apply {
-            width = buttonWidth
-            height = buttonHeight
         }
     }
 }
