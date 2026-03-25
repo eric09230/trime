@@ -78,13 +78,24 @@ class InputBarDelegate : InputBroadcastReceiver {
         }
     }
 
+    private val emojiAction = InlineSwitchEntry.ActionItem("\uD83D\uDE00", "Keyboard_bqrw")
+
+    private fun insertActionItems(entries: List<InlineSwitchEntry>): List<InlineSwitchEntry> {
+        val result = entries.toMutableList()
+        // Insert emoji button after the first switch (中/英)
+        val insertPos = if (result.isNotEmpty()) 1 else 0
+        result.add(insertPos, emojiAction)
+        return result
+    }
+
     private fun loadSwitches() {
         rime.launchOnReady { api ->
             val switches = api.currentSchema().switches
-            val entries = switches.mapNotNull { InlineSwitchEntry.fromSwitch(rime, it) }
+            val entries = switches.mapNotNull { InlineSwitchEntry.SwitchItem.fromSwitch(rime, it) }
+            val allEntries = insertActionItems(entries)
             service.lifecycleScope.launch {
-                hasSwitches = entries.isNotEmpty()
-                alwaysUi.switchesUi.setSwitches(entries)
+                hasSwitches = allEntries.isNotEmpty()
+                alwaysUi.switchesUi.setSwitches(allEntries)
                 evalAlwaysUiState()
             }
         }
@@ -92,9 +103,10 @@ class InputBarDelegate : InputBroadcastReceiver {
 
     private fun refreshSwitchStates() {
         val switches = rime.run { schemaCached }.switches
-        val entries = switches.mapNotNull { InlineSwitchEntry.fromSwitch(rime, it) }
-        hasSwitches = entries.isNotEmpty()
-        alwaysUi.switchesUi.setSwitches(entries)
+        val entries = switches.mapNotNull { InlineSwitchEntry.SwitchItem.fromSwitch(rime, it) }
+        val allEntries = insertActionItems(entries)
+        hasSwitches = allEntries.isNotEmpty()
+        alwaysUi.switchesUi.setSwitches(allEntries)
     }
 
     val themedHeight = theme.generalStyle.run { candidateViewHeight + commentHeight }
@@ -186,43 +198,54 @@ class InputBarDelegate : InputBroadcastReceiver {
                 }
             }
             switchesUi.setOnSwitchClick({ entry ->
-                val sw = entry.switch
-                // Optimistic UI update
-                val newIndex = if (sw.options.isEmpty()) {
-                    1 - entry.enabledIndex
-                } else {
-                    (entry.enabledIndex + 1) % sw.states.size
-                }
-                val optimistic = entry.copy(enabledIndex = newIndex)
-                val currentList = switchesUi.root.adapter?.let {
-                    (it as? SwitchesAdapter)?.items?.toMutableList()
-                } ?: mutableListOf()
-                val pos = currentList.indexOfFirst { it.switch == sw }
-                if (pos >= 0) {
-                    currentList[pos] = optimistic
-                    switchesUi.setSwitches(currentList)
-                }
-                // Async toggle
-                if (sw.options.isEmpty()) {
-                    rime.launchOnReady { api ->
-                        val oldValue = api.getRuntimeOption(sw.name)
-                        api.setRuntimeOption(sw.name, !oldValue)
-                        if (sw.name in saveOptions) {
-                            RimeConfig.openUserConfig("user").use {
-                                it.setBool("var/option/${sw.name}", !oldValue)
-                            }
-                        }
+                when (entry) {
+                    is InlineSwitchEntry.ActionItem -> {
+                        commonKeyboardActionListener.listener.onAction(
+                            KeyActionManager.getAction(entry.action)
+                        )
                     }
-                } else {
-                    rime.launchOnReady { api ->
-                        val currentIdx = sw.options.indexOfFirst { api.getRuntimeOption(it) }
-                        val safeIdx = if (currentIdx >= 0) currentIdx else 0
-                        val newIdx = (safeIdx + 1) % sw.options.size
-                        sw.options.forEachIndexed { i, opt ->
-                            api.setRuntimeOption(opt, i == newIdx)
-                            if (opt in saveOptions) {
-                                RimeConfig.openUserConfig("user").use {
-                                    it.setBool("var/option/$opt", i == newIdx)
+                    is InlineSwitchEntry.SwitchItem -> {
+                        val sw = entry.switch
+                        // Optimistic UI update
+                        val newIndex = if (sw.options.isEmpty()) {
+                            1 - entry.enabledIndex
+                        } else {
+                            (entry.enabledIndex + 1) % sw.states.size
+                        }
+                        val optimistic = entry.copy(enabledIndex = newIndex)
+                        val currentList = switchesUi.root.adapter?.let {
+                            (it as? SwitchesAdapter)?.items?.toMutableList()
+                        } ?: mutableListOf()
+                        val pos = currentList.indexOfFirst {
+                            it is InlineSwitchEntry.SwitchItem && it.switch == sw
+                        }
+                        if (pos >= 0) {
+                            currentList[pos] = optimistic
+                            switchesUi.setSwitches(currentList)
+                        }
+                        // Async toggle
+                        if (sw.options.isEmpty()) {
+                            rime.launchOnReady { api ->
+                                val oldValue = api.getRuntimeOption(sw.name)
+                                api.setRuntimeOption(sw.name, !oldValue)
+                                if (sw.name in saveOptions) {
+                                    RimeConfig.openUserConfig("user").use {
+                                        it.setBool("var/option/${sw.name}", !oldValue)
+                                    }
+                                }
+                            }
+                        } else {
+                            rime.launchOnReady { api ->
+                                val currentIdx = sw.options.indexOfFirst { api.getRuntimeOption(it) }
+                                val safeIdx = if (currentIdx >= 0) currentIdx else 0
+                                val newIdx = (safeIdx + 1) % sw.options.size
+                                sw.options.forEachIndexed { i, opt ->
+                                    api.setRuntimeOption(opt, i == newIdx)
+                                    if (opt in saveOptions) {
+                                        RimeConfig.openUserConfig("user").use {
+                                            it.setBool("var/option/$opt", i == newIdx)
+                                        }
+                                    }
                                 }
                             }
                         }

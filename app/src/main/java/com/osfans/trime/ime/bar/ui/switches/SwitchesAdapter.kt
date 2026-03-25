@@ -29,7 +29,7 @@ class SwitchesAdapter(
         item: InlineSwitchEntry?,
     ) {
         item ?: return
-        holder.ui.setFirstText(item.currentStateText)
-        holder.ui.setLastText(item.altStateText)
+        holder.ui.setFirstText(item.displayText)
+        holder.ui.setLastText(item.secondaryText)
     }
 }
