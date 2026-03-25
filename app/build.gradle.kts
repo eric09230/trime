@@ -60,7 +60,7 @@ android {
                         keyAlias = project.signKeyAlias
                         keyPassword = project.signKeyPwd
                     }
-                }
+                } ?: signingConfigs.getByName("debug")
 
             resValue("string", "trime_app_name", "@string/app_name_release")
         }

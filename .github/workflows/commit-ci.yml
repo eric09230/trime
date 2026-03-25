@@ -58,7 +58,7 @@ jobs:
         id: jni-cache
         with:
           path: "app/prebuilt"
-          key: ${{ matrix.os }}-trime-jni-debug-${{ steps.cache-hash.outputs.native-cache-hash }}
+          key: ${{ matrix.os }}-trime-jni-release-${{ steps.cache-hash.outputs.native-cache-hash }}
 
       - name: Fetch submodules
         if: ${{ !steps.jni-cache.outputs.cache-hit }}
@@ -70,20 +70,20 @@ jobs:
         run: |
           make style-lint
 
-      - name: Build debug Trime
+      - name: Build release Trime
         run: |
-          make debug
+          make release
 
       - name: Add JNI cache
         if: ${{ !steps.jni-cache.outputs.cache-hit }}
         shell: bash
-        run: cp -R app/build/intermediates/merged_native_libs/debug/mergeDebugNativeLibs/out/lib app/prebuilt
+        run: cp -R app/build/intermediates/merged_native_libs/release/mergeReleaseNativeLibs/out/lib app/prebuilt
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v6
         with:
           name: trime-${{ matrix.os }}
-          path: app/build/outputs/apk/debug/
+          path: app/build/outputs/apk/release/
           # keep 90 days
           retention-days: 90
 
@@ -91,7 +91,7 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: trime-arm64-v8a-${{ matrix.os }}
-          path: app/build/outputs/apk/debug/*arm64-v8a-*.apk
+          path: app/build/outputs/apk/release/*arm64-v8a-*.apk
           # keep 90 days
           retention-days: 90
 
@@ -99,6 +99,6 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: librime_jni-${{ matrix.os }}
-          path: app/build/intermediates/merged_native_libs/debug/mergeDebugNativeLibs/out/lib/*
+          path: app/build/intermediates/merged_native_libs/release/mergeReleaseNativeLibs/out/lib/*
           # keep 90 days
           retention-days: 90
