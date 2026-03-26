@@ -69,6 +69,7 @@ data class GeneralStyle(
     val backgroundFolder: String = "backgrounds",
     val enterLabelMode: Int = 0,
     val enterLabel: EnterLabel = EnterLabel(),
+    val switchesBar: List<SwitchesBarEntry> = emptyList(),
 ) : Parcelable {
     enum class CommentPosition {
         UNKNOWN,
