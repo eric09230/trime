@@ -211,8 +211,12 @@ class KeyboardWindow :
     fun switchKeyboard(to: String) {
         var target = evalKeyboard(to)
         // Redirect Chinese punctuation to English punctuation when in ASCII mode
+        // Only when entering from outside bqfh pages (e.g. from ✽ button)
         if (target == "bqfh1" && rime.run { statusCached }.isAsciiMode) {
-            target = "bqfh2"
+            val currentId = currentKeyboardId ?: ""
+            if (!currentId.startsWith("bqfh")) {
+                target = "bqfh2"
+            }
         }
         val finalTarget = target
         ContextCompat.getMainExecutor(service).execute {
