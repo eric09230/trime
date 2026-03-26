@@ -209,15 +209,20 @@ class KeyboardWindow :
     }
 
     fun switchKeyboard(to: String) {
-        val target = evalKeyboard(to)
+        var target = evalKeyboard(to)
+        // Redirect Chinese punctuation to English punctuation when in ASCII mode
+        if (target == "bqfh1" && rime.run { statusCached }.isAsciiMode) {
+            target = "bqfh2"
+        }
+        val finalTarget = target
         ContextCompat.getMainExecutor(service).execute {
-            if (cachedKeyboards.containsKey(target)) {
-                if (target == currentKeyboardId) return@execute
+            if (cachedKeyboards.containsKey(finalTarget)) {
+                if (finalTarget == currentKeyboardId) return@execute
             }
             detachCurrentView()
-            attachKeyboard(target)
+            attachKeyboard(finalTarget)
         }
-        Timber.d("Switched to keyboard: $target")
+        Timber.d("Switched to keyboard: $finalTarget")
     }
 
     override fun onStartInput(info: EditorInfo) {
