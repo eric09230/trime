@@ -13,6 +13,8 @@ import com.osfans.trime.data.theme.Theme
 class SwitchesAdapter(
     private val theme: Theme,
 ) : BaseQuickAdapter<InlineSwitchEntry, SwitchesAdapter.Holder>() {
+    var onSwitchClick: ((InlineSwitchEntry) -> Unit)? = null
+
     inner class Holder(
         val ui: SwitchUi,
     ) : RecyclerView.ViewHolder(ui.root)
@@ -31,5 +33,8 @@ class SwitchesAdapter(
         item ?: return
         holder.ui.setFirstText(item.displayText)
         holder.ui.setLastText(item.secondaryText)
+        holder.ui.root.setOnClickListener {
+            onSwitchClick?.invoke(item)
+        }
     }
 }

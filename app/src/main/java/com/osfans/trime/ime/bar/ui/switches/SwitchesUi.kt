@@ -10,7 +10,6 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.osfans.trime.data.theme.Theme
-import com.osfans.trime.ime.keyboard.InputFeedbackManager
 import splitties.dimensions.dp
 import splitties.views.dsl.core.Ui
 import splitties.views.dsl.core.matchParent
@@ -51,9 +50,6 @@ class SwitchesUi(
     }
 
     fun setOnSwitchClick(listener: (InlineSwitchEntry) -> Unit) {
-        switchesAdapter.setOnItemClickListener { adapter, view, position ->
-            InputFeedbackManager.keyPressVibrate(view)
-            (adapter as? SwitchesAdapter)?.items?.getOrNull(position)?.let(listener)
-        }
+        switchesAdapter.onSwitchClick = listener
     }
 }
