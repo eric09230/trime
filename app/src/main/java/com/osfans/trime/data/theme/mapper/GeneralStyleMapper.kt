@@ -5,8 +5,11 @@
 package com.osfans.trime.data.theme.mapper
 
 import com.charleskorn.kaml.YamlMap
+import com.charleskorn.kaml.yamlMap
 import com.osfans.trime.data.theme.ThemeFilesManager
 import com.osfans.trime.data.theme.model.GeneralStyle
+import com.osfans.trime.data.theme.model.SwitchesBarEntry
+import com.osfans.trime.util.getString
 
 class GeneralStyleMapper(
     node: YamlMap,
@@ -74,5 +77,18 @@ class GeneralStyleMapper(
             null -> GeneralStyle.EnterLabel()
             else -> ThemeFilesManager.yaml.decodeFromYamlNode(map)
         },
+        switchesBar = getList("switches_bar")?.mapNotNull { entry ->
+            try {
+                val m = entry.yamlMap
+                SwitchesBarEntry(
+                    type = m.getString("type", "switch"),
+                    name = m.getString("name", ""),
+                    label = m.getString("label", ""),
+                    action = m.getString("action", ""),
+                )
+            } catch (e: Exception) {
+                null
+            }
+        } ?: emptyList(),
     )
 }
