@@ -52,4 +52,8 @@ class SwitchesUi(
     fun setOnSwitchClick(listener: (InlineSwitchEntry) -> Unit) {
         switchesAdapter.onSwitchClick = listener
     }
+
+    fun setOnSwitchLongClick(listener: () -> Unit) {
+        switchesAdapter.onSwitchLongClick = listener
+    }
 }

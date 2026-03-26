@@ -14,6 +14,7 @@ class SwitchesAdapter(
     private val theme: Theme,
 ) : BaseQuickAdapter<InlineSwitchEntry, SwitchesAdapter.Holder>() {
     var onSwitchClick: ((InlineSwitchEntry) -> Unit)? = null
+    var onSwitchLongClick: (() -> Unit)? = null
 
     inner class Holder(
         val ui: SwitchUi,
@@ -35,6 +36,10 @@ class SwitchesAdapter(
         holder.ui.setLastText(item.secondaryText)
         holder.ui.root.setOnClickListener {
             onSwitchClick?.invoke(item)
+        }
+        holder.ui.root.setOnLongClickListener {
+            onSwitchLongClick?.invoke()
+            true
         }
     }
 }

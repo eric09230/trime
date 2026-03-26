@@ -197,6 +197,9 @@ class InputBarDelegate : InputBroadcastReceiver {
                     true
                 }
             }
+            switchesUi.setOnSwitchLongClick {
+                windowManager.attachWindow(SwitchOptionWindow())
+            }
             switchesUi.setOnSwitchClick({ entry ->
                 when (entry) {
                     is InlineSwitchEntry.ActionItem -> {
