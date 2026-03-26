@@ -64,7 +64,21 @@ class KeyboardWindow :
 
     private lateinit var keyboardView: FrameLayout
 
-    companion object : ResidentWindow.Key
+    companion object : ResidentWindow.Key {
+        @Volatile
+        var activeKeyboardId: String = ""
+            internal set
+
+        @Volatile
+        var isActiveKeyboardLocked: Boolean = false
+            internal set
+
+        private var instance: KeyboardWindow? = null
+
+        internal fun switchToLastLock() {
+            instance?.switchKeyboard("")
+        }
+    }
 
     override val key: ResidentWindow.Key
         get() = KeyboardWindow
@@ -80,6 +94,7 @@ class KeyboardWindow :
     private val keyboardActionListener = commonKeyboardActionListener.listener
 
     override fun onCreateView(): View {
+        instance = this
         keyboardView = context.frameLayout(R.id.keyboard_view)
         attachKeyboard(evalKeyboard(".default"))
         return keyboardView
@@ -106,6 +121,7 @@ class KeyboardWindow :
     private fun attachKeyboard(target: String) {
         currentKeyboardId = target
         lastKeyboardId = target
+        activeKeyboardId = target
 
         val config = selectKeyboardConfig(target)
         val keyboard = currentKeyboard ?: Keyboard(theme, config)
@@ -119,6 +135,7 @@ class KeyboardWindow :
         keyboard.also {
             runBlocking { _currentKeyboardHeight.emit(it.keyboardHeight) }
             if (it.isLock) lastLockKeyboardId = target
+            isActiveKeyboardLocked = it.isLock
             dispatchCapsState(it::setShifted)
 
             val currentMode = rime.run { statusCached }.isAsciiMode

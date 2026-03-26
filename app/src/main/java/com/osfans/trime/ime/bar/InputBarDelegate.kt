@@ -78,7 +78,7 @@ class InputBarDelegate : InputBroadcastReceiver {
         }
     }
 
-    private val emojiAction = InlineSwitchEntry.ActionItem("\uD83D\uDE00", "Keyboard_bqrw")
+    private val emojiAction = InlineSwitchEntry.ActionItem("\uD83D\uDE00", "Keyboard_bqrw1")
 
     private fun insertActionItems(entries: List<InlineSwitchEntry>): List<InlineSwitchEntry> {
         val result = entries.toMutableList()
@@ -203,9 +203,14 @@ class InputBarDelegate : InputBroadcastReceiver {
             switchesUi.setOnSwitchClick({ entry ->
                 when (entry) {
                     is InlineSwitchEntry.ActionItem -> {
-                        commonKeyboardActionListener.listener.onAction(
-                            KeyActionManager.getAction(entry.action),
-                        )
+                        if (entry == emojiAction && !KeyboardWindow.isActiveKeyboardLocked) {
+                            // Already in emoji/symbol area, toggle back to main keyboard
+                            KeyboardWindow.switchToLastLock()
+                        } else {
+                            commonKeyboardActionListener.listener.onAction(
+                                KeyActionManager.getAction(entry.action),
+                            )
+                        }
                     }
                     is InlineSwitchEntry.SwitchItem -> {
                         val sw = entry.switch
