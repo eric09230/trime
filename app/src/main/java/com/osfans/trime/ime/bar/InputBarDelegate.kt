@@ -21,6 +21,7 @@ import androidx.lifecycle.lifecycleScope
 import com.osfans.trime.R
 import com.osfans.trime.core.RimeConfig
 import com.osfans.trime.core.RimeMessage
+import com.osfans.trime.core.RimeSchema
 import com.osfans.trime.core.SchemaItem
 import com.osfans.trime.daemon.RimeSession
 import com.osfans.trime.daemon.launchOnReady
@@ -29,6 +30,7 @@ import com.osfans.trime.data.prefs.AppPrefs
 import com.osfans.trime.data.theme.ColorManager
 import com.osfans.trime.data.theme.KeyActionManager
 import com.osfans.trime.data.theme.Theme
+import com.osfans.trime.data.theme.model.SwitchesBarEntry
 import com.osfans.trime.ime.bar.ui.AlwaysUi
 import com.osfans.trime.ime.bar.ui.CandidateUi
 import com.osfans.trime.ime.bar.ui.TabUi
@@ -89,25 +91,63 @@ class InputBarDelegate : InputBroadcastReceiver {
         return result
     }
 
+    private fun buildEntriesFromConfig(
+        config: List<SwitchesBarEntry>,
+        schemaSwitches: List<RimeSchema.Switch>,
+        rime: RimeSession,
+    ): List<InlineSwitchEntry> {
+        return config.mapNotNull { entry ->
+            when (entry.type) {
+                "action" -> {
+                    if (entry.label.isNotEmpty() && entry.action.isNotEmpty()) {
+                        InlineSwitchEntry.ActionItem(entry.label, entry.action)
+                    } else null
+                }
+                else -> {
+                    // type == "switch": find matching RIME schema switch by name
+                    val sw = schemaSwitches.firstOrNull { it.name == entry.name }
+                        ?: schemaSwitches.firstOrNull {
+                            it.options.contains(entry.name)
+                        }
+                    sw?.let { InlineSwitchEntry.SwitchItem.fromSwitch(rime, it) }
+                }
+            }
+        }
+    }
+
     private fun loadSwitches() {
+        val config = theme.generalStyle.switchesBar
         rime.launchOnReady { api ->
             val switches = api.currentSchema().switches
-            val entries = switches.mapNotNull { InlineSwitchEntry.SwitchItem.fromSwitch(rime, it) }
-            val allEntries = insertActionItems(entries)
+            val entries = if (config.isNotEmpty()) {
+                buildEntriesFromConfig(config, switches, rime)
+            } else {
+                val schemaEntries = switches.mapNotNull {
+                    InlineSwitchEntry.SwitchItem.fromSwitch(rime, it)
+                }
+                insertActionItems(schemaEntries)
+            }
             service.lifecycleScope.launch {
-                hasSwitches = allEntries.isNotEmpty()
-                alwaysUi.switchesUi.setSwitches(allEntries)
+                hasSwitches = entries.isNotEmpty()
+                alwaysUi.switchesUi.setSwitches(entries)
                 evalAlwaysUiState()
             }
         }
     }
 
     private fun refreshSwitchStates() {
+        val config = theme.generalStyle.switchesBar
         val switches = rime.run { schemaCached }.switches
-        val entries = switches.mapNotNull { InlineSwitchEntry.SwitchItem.fromSwitch(rime, it) }
-        val allEntries = insertActionItems(entries)
-        hasSwitches = allEntries.isNotEmpty()
-        alwaysUi.switchesUi.setSwitches(allEntries)
+        val entries = if (config.isNotEmpty()) {
+            buildEntriesFromConfig(config, switches, rime)
+        } else {
+            val schemaEntries = switches.mapNotNull {
+                InlineSwitchEntry.SwitchItem.fromSwitch(rime, it)
+            }
+            insertActionItems(schemaEntries)
+        }
+        hasSwitches = entries.isNotEmpty()
+        alwaysUi.switchesUi.setSwitches(entries)
     }
 
     val themedHeight = theme.generalStyle.run { candidateViewHeight + commentHeight }
@@ -205,8 +245,8 @@ class InputBarDelegate : InputBroadcastReceiver {
                 InputFeedbackManager.keyPressVibrate(switchesUi.root)
                 when (entry) {
                     is InlineSwitchEntry.ActionItem -> {
-                        if (entry == emojiAction && !KeyboardWindow.isActiveKeyboardLocked) {
-                            // Already in emoji/symbol area, toggle back to main keyboard
+                        if (!KeyboardWindow.isActiveKeyboardLocked) {
+                            // Already in a switched keyboard, toggle back to main
                             KeyboardWindow.switchToLastLock()
                         } else {
                             commonKeyboardActionListener.listener.onAction(
