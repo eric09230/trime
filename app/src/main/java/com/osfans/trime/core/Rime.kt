@@ -172,6 +172,7 @@ class Rime :
         value: Boolean,
     ): Unit = withRimeContext {
         setRimeOption(option, value)
+        emitResponse()
     }
 
     override suspend fun getRuntimeOption(option: String): Boolean = withRimeContext {
