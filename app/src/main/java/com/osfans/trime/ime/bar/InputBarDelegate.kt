@@ -30,10 +30,10 @@ import com.osfans.trime.data.theme.ColorManager
 import com.osfans.trime.data.theme.KeyActionManager
 import com.osfans.trime.data.theme.Theme
 import com.osfans.trime.ime.bar.ui.AlwaysUi
-import com.osfans.trime.ime.bar.ui.switches.InlineSwitchEntry
-import com.osfans.trime.ime.bar.ui.switches.SwitchesAdapter
 import com.osfans.trime.ime.bar.ui.CandidateUi
 import com.osfans.trime.ime.bar.ui.TabUi
+import com.osfans.trime.ime.bar.ui.switches.InlineSwitchEntry
+import com.osfans.trime.ime.bar.ui.switches.SwitchesAdapter
 import com.osfans.trime.ime.broadcast.InputBroadcastReceiver
 import com.osfans.trime.ime.candidates.compact.CompactCandidateDelegate
 import com.osfans.trime.ime.candidates.unrolled.window.FlexboxUnrolledCandidateWindow
@@ -204,7 +204,7 @@ class InputBarDelegate : InputBroadcastReceiver {
                 when (entry) {
                     is InlineSwitchEntry.ActionItem -> {
                         commonKeyboardActionListener.listener.onAction(
-                            KeyActionManager.getAction(entry.action)
+                            KeyActionManager.getAction(entry.action),
                         )
                     }
                     is InlineSwitchEntry.SwitchItem -> {

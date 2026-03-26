@@ -84,7 +84,7 @@ class AlwaysUi(
             add(buttonsUi.root, lParams(matchParent, matchParent))
             add(clipboardUi.root, lParams(matchParent, matchParent))
             add(inlineSuggestionsUi.root, lParams(matchParent, matchParent))
-            add(switchesUi.root, lParams(matchParent, matchParent))  // 3 = Switches
+            add(switchesUi.root, lParams(matchParent, matchParent)) // 3 = Switches
         }
 
     override val root: ConstraintLayout = constraintLayout {
