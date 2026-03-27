@@ -248,6 +248,9 @@ class InputBarDelegate : InputBroadcastReceiver {
                         if (!KeyboardWindow.isActiveKeyboardLocked) {
                             // Already in a switched keyboard, toggle back to main
                             KeyboardWindow.switchToLastLock()
+                        } else if (entry.action.contains('{')) {
+                            // Compound action (e.g. '{Keyboard_jpnin1}{text_6}')
+                            commonKeyboardActionListener.listener.onText(entry.action)
                         } else {
                             commonKeyboardActionListener.listener.onAction(
                                 KeyActionManager.getAction(entry.action),
