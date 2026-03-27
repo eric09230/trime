@@ -247,6 +247,8 @@ class InputBarDelegate : InputBroadcastReceiver {
                     is InlineSwitchEntry.ActionItem -> {
                         if (!KeyboardWindow.isActiveKeyboardLocked) {
                             // Already in a switched keyboard, toggle back to main
+                            // Clear any dangling prefix (e.g. '6'/'7' from continuous JP/KR mode)
+                            rime.launchOnReady { api -> api.clearComposition() }
                             KeyboardWindow.switchToLastLock()
                         } else if (entry.action.contains('{')) {
                             // Compound action (e.g. '{Keyboard_jpnin1}{text_6}')
