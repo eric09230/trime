@@ -245,13 +245,15 @@ class InputBarDelegate : InputBroadcastReceiver {
                 InputFeedbackManager.keyPressVibrate(switchesUi.root)
                 when (entry) {
                     is InlineSwitchEntry.ActionItem -> {
-                        if (!KeyboardWindow.isActiveKeyboardLocked) {
-                            // Already in a switched keyboard, toggle back to main
-                            // Clear any dangling prefix (e.g. '6'/'7' from continuous JP/KR mode)
+                        val currentKb = KeyboardWindow.activeKeyboardId
+                        val isAlreadyOnTarget = entry.targetKeyboardId.isNotEmpty() &&
+                            currentKb == entry.targetKeyboardId
+                        if (isAlreadyOnTarget) {
+                            // Toggle back: clear dangling prefix and return to main
                             rime.launchOnReady { api -> api.clearComposition() }
                             KeyboardWindow.switchToLastLock()
                         } else if (entry.action.contains('{')) {
-                            // Compound action (e.g. '{Keyboard_jpnin1}{text_6}')
+                            // Compound action (e.g. '{Keyboard_jpnin1_stay}{text_6}')
                             commonKeyboardActionListener.listener.onText(entry.action)
                         } else {
                             commonKeyboardActionListener.listener.onAction(

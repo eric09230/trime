@@ -6,6 +6,7 @@ package com.osfans.trime.ime.bar.ui.switches
 
 import com.osfans.trime.core.RimeSchema
 import com.osfans.trime.daemon.RimeSession
+import com.osfans.trime.data.theme.KeyActionManager
 
 sealed interface InlineSwitchEntry {
     val displayText: String
@@ -46,5 +47,11 @@ sealed interface InlineSwitchEntry {
     ) : InlineSwitchEntry {
         override val displayText: String get() = label
         override val secondaryText: String get() = ""
+
+        /** Extract target keyboard ID from compound action like '{Keyboard_xxx}{text_6}' */
+        val targetKeyboardId: String by lazy {
+            val match = Regex("\\{(Keyboard_[^}]+)\\}").find(action) ?: return@lazy ""
+            KeyActionManager.getAction(match.groupValues[1]).select
+        }
     }
 }
