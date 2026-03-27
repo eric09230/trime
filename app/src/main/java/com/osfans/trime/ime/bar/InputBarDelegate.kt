@@ -95,22 +95,22 @@ class InputBarDelegate : InputBroadcastReceiver {
         config: List<SwitchesBarEntry>,
         schemaSwitches: List<RimeSchema.Switch>,
         rime: RimeSession,
-    ): List<InlineSwitchEntry> {
-        return config.mapNotNull { entry ->
-            when (entry.type) {
-                "action" -> {
-                    if (entry.label.isNotEmpty() && entry.action.isNotEmpty()) {
-                        InlineSwitchEntry.ActionItem(entry.label, entry.action)
-                    } else null
+    ): List<InlineSwitchEntry> = config.mapNotNull { entry ->
+        when (entry.type) {
+            "action" -> {
+                if (entry.label.isNotEmpty() && entry.action.isNotEmpty()) {
+                    InlineSwitchEntry.ActionItem(entry.label, entry.action)
+                } else {
+                    null
                 }
-                else -> {
-                    // type == "switch": find matching RIME schema switch by name
-                    val sw = schemaSwitches.firstOrNull { it.name == entry.name }
-                        ?: schemaSwitches.firstOrNull {
-                            it.options.contains(entry.name)
-                        }
-                    sw?.let { InlineSwitchEntry.SwitchItem.fromSwitch(rime, it) }
-                }
+            }
+            else -> {
+                // type == "switch": find matching RIME schema switch by name
+                val sw = schemaSwitches.firstOrNull { it.name == entry.name }
+                    ?: schemaSwitches.firstOrNull {
+                        it.options.contains(entry.name)
+                    }
+                sw?.let { InlineSwitchEntry.SwitchItem.fromSwitch(rime, it) }
             }
         }
     }
