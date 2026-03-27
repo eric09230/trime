@@ -78,6 +78,10 @@ class KeyboardWindow :
         internal fun switchToLastLock() {
             instance?.switchKeyboard("")
         }
+
+        internal fun switchToDefault() {
+            instance?.switchKeyboard(".default")
+        }
     }
 
     override val key: ResidentWindow.Key

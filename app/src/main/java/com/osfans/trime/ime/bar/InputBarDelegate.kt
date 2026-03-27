@@ -249,9 +249,9 @@ class InputBarDelegate : InputBroadcastReceiver {
                         val isAlreadyOnTarget = entry.targetKeyboardId.isNotEmpty() &&
                             currentKb == entry.targetKeyboardId
                         if (isAlreadyOnTarget) {
-                            // Toggle back: clear dangling prefix and return to main
+                            // Toggle back: clear dangling prefix and return to default keyboard
                             rime.launchOnReady { api -> api.clearComposition() }
-                            KeyboardWindow.switchToLastLock()
+                            KeyboardWindow.switchToDefault()
                         } else if (entry.action.contains('{')) {
                             // Compound action (e.g. '{Keyboard_jpnin1_stay}{text_6}')
                             commonKeyboardActionListener.listener.onText(entry.action)
