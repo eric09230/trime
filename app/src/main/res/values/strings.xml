@@ -96,6 +96,9 @@
     <string name="hook_shift_num">Ignore Shift locked for 0-9</string>
     <string name="hook_shift_symbol">Ignore Shift locked for Symbol keys</string>
     <string name="hook_shift_arrow">Keep Shift locked for Arrow keys</string>
+    <string name="glide_typing_enabled">Glide typing (滑動輸入)</string>
+    <string name="glide_dwell_time">Glide dwell time (停頓判定)</string>
+    <string name="glide_trail_width">Glide trail width (軌跡粗度)</string>
     <string name="exception_logcat_created">Logcat process is already created</string>
     <string name="app_crash">Application crashed</string>
     <string name="app_crash_message">Sorry, but we bring you some logs to investigate.</string>

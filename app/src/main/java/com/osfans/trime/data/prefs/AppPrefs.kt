@@ -157,6 +157,10 @@ class AppPrefs(
             const val MAX_SPAN_COUNT = "max_span_count"
             const val MAX_SPAN_COUNT_LANDSCAPE = "max_span_count_landscape"
             const val HORIZONTAL_CANDIDATE_MODE = "horizontal_candidate_mode"
+
+            const val GLIDE_TYPING_ENABLED = "glide_typing_enabled"
+            const val GLIDE_DWELL_TIME = "glide_dwell_time"
+            const val GLIDE_TRAIL_WIDTH = "glide_trail_width"
         }
 
         enum class LandscapeMode(override val stringRes: Int) : PreferenceDelegateEnum {
@@ -331,6 +335,27 @@ class AppPrefs(
         val hookShiftNum = switch(R.string.hook_shift_num, HOOK_SHIFT_NUM, false)
         val hookShiftSymbol = switch(R.string.hook_shift_symbol, HOOK_SHIFT_SYMBOL, false)
         val hookShiftArrow = switch(R.string.hook_shift_arrow, HOOK_SHIFT_ARROW, true)
+
+        val glideTypingEnabled = switch(R.string.glide_typing_enabled, GLIDE_TYPING_ENABLED, true)
+
+        val glideDwellTime = int(
+            R.string.glide_dwell_time,
+            GLIDE_DWELL_TIME,
+            120,
+            40,
+            300,
+            "ms",
+            10,
+        ) { glideTypingEnabled.getValue() }
+
+        val glideTrailWidth = int(
+            R.string.glide_trail_width,
+            GLIDE_TRAIL_WIDTH,
+            3,
+            1,
+            10,
+            "dp",
+        ) { glideTypingEnabled.getValue() }
     }
 
     class Candidates(

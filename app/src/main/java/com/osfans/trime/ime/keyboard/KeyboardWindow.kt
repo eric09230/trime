@@ -19,6 +19,7 @@ import com.osfans.trime.data.theme.Theme
 import com.osfans.trime.data.theme.model.TextKeyboard
 import com.osfans.trime.ime.broadcast.InputBroadcastReceiver
 import com.osfans.trime.ime.core.TrimeInputMethodService
+import com.osfans.trime.ime.glide.GlideTypingManager
 import com.osfans.trime.ime.keyboard.KeyboardPrefs.isLandscapeMode
 import com.osfans.trime.ime.popup.PopupDelegate
 import com.osfans.trime.ime.window.BoardWindow
@@ -97,6 +98,8 @@ class KeyboardWindow :
 
     private val keyboardActionListener = commonKeyboardActionListener.listener
 
+    internal var glideManager: GlideTypingManager? = null
+
     override fun onCreateView(): View {
         instance = this
         keyboardView = context.frameLayout(R.id.keyboard_view)
@@ -105,6 +108,7 @@ class KeyboardWindow :
     }
 
     private fun detachCurrentView() {
+        glideManager?.detach()
         currentKeyboardView?.also {
             it.onDetach()
             keyboardView.removeView(it)
@@ -160,6 +164,11 @@ class KeyboardWindow :
             it.keyboardActionListener = keyboardActionListener
             keyboardView.apply { add(it, lParams(matchParent, matchParent)) }
         }
+
+        // Set up glide typing
+        val manager = GlideTypingManager(service, rime)
+        manager.attach(view, keyboard)
+        glideManager = manager
     }
 
     private fun smartMatchKeyboard(): String {
@@ -342,6 +351,8 @@ class KeyboardWindow :
     }
 
     override fun onDetached() {
+        glideManager?.detach()
+        glideManager = null
         currentKeyboardView?.let {
             it.onDetach()
             it.keyboardActionListener = null

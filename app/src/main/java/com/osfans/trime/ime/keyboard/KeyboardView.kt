@@ -17,6 +17,7 @@ import android.graphics.Rect
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
 import android.view.KeyEvent
+import android.view.MotionEvent
 import androidx.core.graphics.createBitmap
 import androidx.core.graphics.withClip
 import com.mikepenz.iconics.IconicsDrawable
@@ -27,6 +28,7 @@ import com.osfans.trime.data.theme.ColorManager
 import com.osfans.trime.data.theme.FontManager
 import com.osfans.trime.data.theme.Theme
 import com.osfans.trime.ime.core.TrimeInputMethodService
+import com.osfans.trime.ime.glide.GlideTypingInterceptor
 import com.osfans.trime.ime.popup.PopupAction
 import com.osfans.trime.ime.popup.PopupActionListener
 import com.osfans.trime.ime.popup.PopupDelegate
@@ -45,6 +47,22 @@ class KeyboardView(
     private val popup: PopupDelegate,
     private val service: TrimeInputMethodService,
 ) : KeyboardGestureFrame(context) {
+
+    /** Set by [GlideTypingManager] to intercept touch events for glide typing. */
+    var glideInterceptor: GlideTypingInterceptor? = null
+
+    override fun onInterceptTouchEvent(event: MotionEvent): Boolean {
+        return glideInterceptor?.onInterceptTouch(event) ?: super.onInterceptTouchEvent(event)
+    }
+
+    @SuppressLint("ClickableViewAccessibility")
+    override fun onTouchEvent(event: MotionEvent): Boolean {
+        val interceptor = glideInterceptor
+        if (interceptor != null && interceptor.isActive) {
+            return interceptor.onTouch(event)
+        }
+        return super.onTouchEvent(event)
+    }
 
     private val rime get() = RimeDaemon.getFirstSessionOrNull()!!
     private val keyTextSize = theme.generalStyle.keyTextSize

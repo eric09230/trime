@@ -137,16 +137,21 @@ class CommonKeyboardActionListener {
             override fun onAction(action: KeyAction) {
                 val shouldHandle = when {
                     action.commit.isNotEmpty() -> {
+                        keyboardWindow.glideManager?.onKeyAction(action.commit)
                         service.commitText(action.commit)
                         false
                     }
                     KeyboardSwitcher.currentKeyboard.let { keyboard ->
                         action.getText(keyboard).isNotEmpty()
                     } -> {
+                        keyboardWindow.glideManager?.onKeyAction(null)
                         onText(action.getText(KeyboardSwitcher.currentKeyboard))
                         false
                     }
-                    else -> true
+                    else -> {
+                        keyboardWindow.glideManager?.onKeyAction(null)
+                        true
+                    }
                 }
 
                 if (shouldHandle) {
