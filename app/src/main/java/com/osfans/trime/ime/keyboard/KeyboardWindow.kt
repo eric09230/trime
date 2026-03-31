@@ -348,6 +348,14 @@ class KeyboardWindow :
 
     override fun onAttached() {
         currentKeyboardView?.keyboardActionListener = keyboardActionListener
+        // Re-attach glide typing after BoardWindowManager re-attaches this window
+        val view = currentKeyboardView
+        val kb = currentKeyboard
+        if (view != null && kb != null) {
+            val manager = GlideTypingManager(service, rime)
+            manager.attach(view, kb)
+            glideManager = manager
+        }
     }
 
     override fun onDetached() {

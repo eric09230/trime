@@ -123,13 +123,8 @@ class GlideTypingManager(
 
     private val glideListener = object : GlideTypingInterceptor.Listener {
         override fun onGlideStart(trace: GlideTrace) {
-            // Set glide mode based on current RIME ascii mode
-            val isAscii = rime.run { statusCached }.isAsciiMode
-            interceptor?.glideMode = if (isAscii && englishTemplatesReady.get()) {
-                GlideTypingInterceptor.GlideMode.TRACE
-            } else {
-                GlideTypingInterceptor.GlideMode.DWELL
-            }
+            // Always use DWELL mode — let RIME handle word prediction with its own dictionary
+            interceptor?.glideMode = GlideTypingInterceptor.GlideMode.DWELL
             overlayView?.updateTrail(trace.points)
         }
 
@@ -139,12 +134,7 @@ class GlideTypingManager(
 
         override fun onGlideComplete(trace: GlideTrace) {
             overlayView?.clearTrail()
-            // Dispatch based on mode set at gesture start (not re-checking isAsciiMode)
-            if (interceptor?.glideMode == GlideTypingInterceptor.GlideMode.TRACE) {
-                decodeAndCommitEnglish(trace)
-            } else {
-                sendCrossedKeys()
-            }
+            sendCrossedKeys()
         }
 
         override fun onGlideCancelled() {

@@ -51,17 +51,31 @@ class KeyboardView(
     /** Set by [GlideTypingManager] to intercept touch events for glide typing. */
     var glideInterceptor: GlideTypingInterceptor? = null
 
-    override fun onInterceptTouchEvent(event: MotionEvent): Boolean {
-        return glideInterceptor?.onInterceptTouch(event) ?: super.onInterceptTouchEvent(event)
-    }
+    private var gestureFrameOwnsPointer = false
 
-    @SuppressLint("ClickableViewAccessibility")
-    override fun onTouchEvent(event: MotionEvent): Boolean {
+    override fun dispatchTouchEvent(event: MotionEvent): Boolean {
         val interceptor = glideInterceptor
-        if (interceptor != null && interceptor.isActive) {
-            return interceptor.onTouch(event)
+        if (interceptor != null) {
+            if (interceptor.isActive) {
+                return interceptor.onTouch(event)
+            }
+            if (interceptor.onInterceptTouch(event)) {
+                // Glide just started — cancel the gesture frame's long press / pointer tracking
+                if (gestureFrameOwnsPointer) {
+                    val cancel = MotionEvent.obtain(event).apply { action = MotionEvent.ACTION_CANCEL }
+                    super.dispatchTouchEvent(cancel)
+                    cancel.recycle()
+                    gestureFrameOwnsPointer = false
+                }
+                return true
+            }
         }
-        return super.onTouchEvent(event)
+        if (event.actionMasked == MotionEvent.ACTION_DOWN) {
+            gestureFrameOwnsPointer = true
+        } else if (event.actionMasked == MotionEvent.ACTION_UP || event.actionMasked == MotionEvent.ACTION_CANCEL) {
+            gestureFrameOwnsPointer = false
+        }
+        return super.dispatchTouchEvent(event)
     }
 
     private val rime get() = RimeDaemon.getFirstSessionOrNull()!!
@@ -297,6 +311,13 @@ class KeyboardView(
                 fullWidth
             }
         setMeasuredDimension(measuredWidth, fullHeight)
+        // Measure children (GlideOverlayView) so they are not 0x0
+        for (i in 0 until childCount) {
+            getChildAt(i).measure(
+                MeasureSpec.makeMeasureSpec(measuredWidth, MeasureSpec.EXACTLY),
+                MeasureSpec.makeMeasureSpec(fullHeight, MeasureSpec.EXACTLY),
+            )
+        }
     }
 
     /**
