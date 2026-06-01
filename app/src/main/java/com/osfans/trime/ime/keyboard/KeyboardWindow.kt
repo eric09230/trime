@@ -122,7 +122,10 @@ class KeyboardWindow :
         return config
     }
 
-    private fun attachKeyboard(target: String) {
+    private fun attachKeyboard(
+        target: String,
+        preserveAsciiMode: Boolean = false,
+    ) {
         currentKeyboardId = target
         lastKeyboardId = target
         activeKeyboardId = target
@@ -143,7 +146,10 @@ class KeyboardWindow :
             dispatchCapsState(it::setShifted)
 
             val currentMode = rime.run { statusCached }.isAsciiMode
-            val targetMode = if (it.resetAsciiMode) it.asciiMode else it.lastAsciiMode
+            // 「返回」語意（.last_lock 返回鍵、emoji 切回主鍵盤）保留離開前的中/英模式，
+            // 不套用 reset_ascii_mode，避免從符號頁返回時被強制切回注音。
+            val targetMode =
+                if (it.resetAsciiMode && !preserveAsciiMode) it.asciiMode else it.lastAsciiMode
 
             if (currentMode != targetMode) {
                 service.postRimeJob {
@@ -223,12 +229,14 @@ class KeyboardWindow :
             }
         }
         val finalTarget = target
+        // 返回上一個鎖定鍵盤（返回鍵送 .last_lock、emoji 切回送空字串）時保留中/英模式
+        val preserveAsciiMode = to == ".last_lock" || to.isEmpty()
         ContextCompat.getMainExecutor(service).execute {
             if (cachedKeyboards.containsKey(finalTarget)) {
                 if (finalTarget == currentKeyboardId) return@execute
             }
             detachCurrentView()
-            attachKeyboard(finalTarget)
+            attachKeyboard(finalTarget, preserveAsciiMode)
         }
         Timber.d("Switched to keyboard: $finalTarget")
     }
